@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  firstName   String
+  lastName    String
+  userName    String    @unique
+  mailID      String    @unique
+  password    String    // hashed password -> hashed after satisfying all the req.s
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relationships
+  authoredRecipes Recipe[]  @relation("AuthoredRecipes") // Recipes authored by the user
+  likedRecipes    Recipe[]  @relation("LikedByUsers")   // Recipes liked by the user
+  savedRecipes    Recipe[]  @relation("SavedByUsers")   // Recipes saved by the user
+}
+
+model Recipe {
+  id               String     @id @default(cuid())
+  title            String
+  image            String
+  ingredients      Json
+  steps            String[]
+  nutritionalFacts Json?
+  difficulty       Int?
+  cookingTime      Int?
+  preparationTips  String[]
+
+  // Relationships
+  authorId         String?    // Author's ID (nullable if no author)
+  author           User?      @relation("AuthoredRecipes", fields: [authorId], references: [id])
+
+  likedBy          User[]     @relation("LikedByUsers")  // Users who liked this recipe
+  savedBy          User[]     @relation("SavedByUsers")  // Users who saved this recipe
+
+  tags             Tags[]     @relation("RecipeTags")    // Tags associated with the recipe
+}
+
+model Tags {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Relationships
+  recipes Recipe[] @relation("RecipeTags") // Recipes associated with this tag
+}
