@@ -2,7 +2,9 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import saltAndHashPassword from "./utils/salt_hash";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -14,31 +16,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { type: "password" },
       },
       authorize: async (credentials) => {
-        let user = null;
-        const pwHash = saltAndHashPassword(credentials.password as string);
-
-        // user = await getUserFromDb(credentials.email, pwHash);
-        const exampleUser = {
-          email: "example@example.com",
-          password: "12345",
-          image: "https://avatars.githubusercontent.com/u/73393502?v=4",
-          name: "Test User 0001",
-        };
-
-        if (
-          credentials.email === exampleUser.email &&
-          credentials.password === exampleUser.password
-        ) {
-          user = exampleUser;
-        }
+        const user = await prisma.user.findUnique({
+          where: { mailID: credentials.email },
+        });
 
         if (!user) {
-          // No user found, so this is their first attempt to login
-          // meaning this is also the place you could do registration
-          throw new Error("User not found.");
+          // No user found
+          throw new Error("create account maybe");
         }
 
-        // return user object with the their profile data
+        // implement using salt and hash
+        if (credentials.password !== user.password) {
+          // Passwords don't match
+          throw new Error("invalid credentials.");
+        }
+
+        // Passwords match, return user object with their profile data
         return user;
       },
     }),

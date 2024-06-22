@@ -5,7 +5,7 @@ export default auth((req) => {
   const isLogged = !!req.auth;
   console.log("Route -> :", req.nextUrl.pathname);
   console.log("isLogged: ", isLogged);
-  console.log("User -> ", req.auth?.user?.name);
+  console.log(req.auth?.user);
 });
 
 export const config = {
