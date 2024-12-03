@@ -3,37 +3,50 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     GitHub,
     Google,
     Credentials({
       credentials: {
-        email: {},
+        email: { type: "email" },
         password: { type: "password" },
       },
       authorize: async (credentials) => {
+        const { email, password } = credentials as {
+          email: string;
+          password: string;
+        };
+
         const user = await prisma.user.findUnique({
-          where: { mailID: credentials.email },
+          where: { email },
         });
 
         if (!user) {
-          // No user found
-          throw new Error("create account maybe");
+          throw new Error("User not found. Create an account.");
+        }
+        if (!user.password) {
+          throw new Error("Password not set. Please reset your password.");
         }
 
-        // implement using salt and hash
-        if (credentials.password !== user.password) {
-          // Passwords don't match
-          throw new Error("invalid credentials.");
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordCorrect) {
+          throw new Error("Invalid credentials.");
         }
 
-        // Passwords match, return user object with their profile data
         return user;
       },
     }),
   ],
+  pages: {
+    newUser: "/new",
+  },
 });

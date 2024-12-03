@@ -15,10 +15,10 @@ datasource db {
 
 model User {
   id          String    @id @default(uuid())
-  firstName   String
-  lastName    String
+  name        String
   userName    String    @unique
-  mailID      String    @unique
+  email       String     @unique
+  image       String    
   password    String    // hashed password -> hashed after satisfying all the req.s
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -39,6 +39,8 @@ model Recipe {
   difficulty       Int?
   cookingTime      Int?
   preparationTips  String[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   // Relationships
   authorId         String?    // Author's ID (nullable if no author)

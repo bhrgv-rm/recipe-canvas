@@ -1,0 +1,21 @@
+meta {
+  name: post
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/api/create-user
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Liam Chen",
+    "email": "liam.chen@example.com",
+    "username": "liamtech",
+    "password": "CodeMaster2024#",
+    "image": "https://randomuser.me/api/portraits/men/35.jpg"
+  }
+}
