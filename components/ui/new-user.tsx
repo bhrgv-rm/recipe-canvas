@@ -4,13 +4,14 @@ import axios from "axios";
 import PassField from "../pass-field";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import saltAndHashPassword from "@/utils/salt_hash"; // Assuming this function hashes the password
+import saltAndHashPassword from "@/utils/salt_hash"; // Import the hashing function
 
 interface FormData {
   name: string;
   email: string;
   username: string;
   password: string;
+  confirmPassword: string;
   image?: string;
 }
 
@@ -20,44 +21,58 @@ export default function NewUser() {
     email: "",
     username: "",
     password: "",
+    confirmPassword: "",
     image: "",
   });
 
-  const [loading, setLoading] = useState<boolean>(false); // Added loading state
-  const [error, setError] = useState<string | null>(null); // Added error state
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setFormData({
-      ...formData,
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: value,
-    });
+    }));
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    setLoading(true); // Set loading state to true on form submission
-    setError(null); // Reset error state
+    setLoading(true);
+    setError(null);
 
-    // Hash the password before sending the form data to the server
-    const hashedPassword = saltAndHashPassword(formData.password);
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Create user with the hashed password
-      const dataToSend = { ...formData, password: hashedPassword }; // Replace password with hashed one
+      // Hash the password before sending it
+      const hashedPassword = await saltAndHashPassword(formData.password);
+
+      const dataToSend = {
+        ...formData,
+        password: hashedPassword, // Send the hashed password
+        confirmPassword: undefined, // Exclude confirmPassword from the data sent to the backend
+      };
+      console.table(dataToSend);
+
+      // Create user via API (Backend will handle user creation)
       await axios.post("/api/create-user", dataToSend);
 
-      // Sign in with credentials after the user is created
+      // Sign in with credentials after user is created
       const result = await signIn("credentials", {
-        redirect: false, // Don't redirect automatically
+        redirect: false,
         email: formData.email,
-        password: hashedPassword, // Send hashed password for sign-in
+        password: formData.password, // Use plain password to authenticate
       });
 
       if (result?.ok) {
-        router.push("/"); // Redirect to the home page if login is successful
+        router.push("/"); // Redirect to home page on success
       } else {
         setError(result?.error || "Unknown error during sign-in.");
       }
@@ -67,20 +82,19 @@ export default function NewUser() {
           (error instanceof Error ? error.message : "Unknown error")
       );
     } finally {
-      setLoading(false); // Set loading state back to false
+      setLoading(false);
     }
   };
 
   return (
     <div className="create-user">
       <h1 className="mb-3">Create Account</h1>
-      {error && <div className="error-message">{error}</div>}{" "}
-      {/* Display error message */}
+      {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          name="name"
           placeholder="Name"
+          name="name"
           value={formData.name}
           onChange={handleChange}
           autoComplete="off"
@@ -88,8 +102,8 @@ export default function NewUser() {
         />
         <input
           type="email"
-          name="email"
           placeholder="Email"
+          name="email"
           value={formData.email}
           onChange={handleChange}
           required
@@ -97,18 +111,24 @@ export default function NewUser() {
         />
         <input
           type="text"
-          name="username"
           placeholder="Username"
+          name="username"
           value={formData.username}
           onChange={handleChange}
           autoComplete="off"
           required
         />
-        <PassField value={formData.password} onChange={handleChange} />
         <PassField
-          placeholder="Re-Enter Password"
+          placeholder="Password"
           value={formData.password}
           onChange={handleChange}
+          name="password"
+        />
+        <PassField
+          placeholder="Re-Enter Password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          name="confirmPassword"
         />
         <input
           type="text"
@@ -119,8 +139,7 @@ export default function NewUser() {
           autoComplete="off"
         />
         <button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Account"}{" "}
-          {/* Show loading text on submit */}
+          {loading ? "Creating..." : "Create Account"}
         </button>
       </form>
     </div>

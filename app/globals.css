@@ -66,11 +66,34 @@ body {
   width: 300px;
 }
 
-.sign-in form button,
-.create-user form button {
+button {
   padding: 12px;
   background: var(--background);
   color: var(--foreground);
   border-radius: 10px;
   border: 1px dashed var(--foreground);
+}
+
+.not-found {
+  color: var(--background);
+  width: calc(100vw - 5rem);
+  height: calc(100vh - 5rem);
+  border-radius: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--foreground);
+}
+
+.not-found h2 {
+  font-size: 10rem;
+}
+
+.not-found p {
+  margin-bottom: 1rem;
 }
