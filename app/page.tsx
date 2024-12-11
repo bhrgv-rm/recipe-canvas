@@ -7,9 +7,14 @@ import FoodCard from "@/components/ui/food-card";
 import type { Metadata } from "next";
 import Favicon from "@/app/react.svg";
 import { Inter } from "next/font/google";
+import SM_Card from "@/components/ui/sm-card";
+import Navbar from "@/components/Navbar";
+
 const inter = Inter({ subsets: ["latin"] });
 
+// Move PrismaClient initialization outside the component
 const prisma = new PrismaClient();
+
 export const metadata: Metadata = {
   title: "first",
   description: "second",
@@ -17,55 +22,51 @@ export const metadata: Metadata = {
     icon: Favicon.src,
   },
 };
-async function getuser(email: string) {
-  const user = await prisma.user.findUnique({ where: { email: email } });
-  console.table(user);
-  return user;
-}
-export default async function Home() {
-  const sampleRecipe = {
-    id: "1",
-    title: "Spaghetti Carbonara",
-    image:
-      "https://images.pexels.com/photos/5710164/pexels-photo-5710164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    ingredients: [
-      "Spaghetti",
-      "Eggs",
-      "Pancetta",
-      "Parmesan cheese",
-      "Black pepper",
-    ],
-    steps: [
-      "Boil spaghetti until al dente.",
-      "Fry pancetta until crispy.",
-      "Beat eggs and mix with parmesan cheese.",
-      "Toss spaghetti with pancetta and egg mixture.",
-      "Season with black pepper and serve.",
-    ],
-    nutritionalFacts: {
-      calories: "600 kcal",
-      protein: "25g",
-      fat: "22g",
-      carbs: "85g",
-    },
-    difficulty: 2,
-    cookingTime: 30,
-    preparationTips: [
-      "Use freshly grated parmesan for best flavor.",
-      "Do not overcook the eggs to avoid scrambling.",
-    ],
-    createdAt: "2024-11-20T10:00:00Z",
-    updatedAt: "2024-11-25T12:00:00Z",
-  };
-  const session = await auth(); // Get the session
 
-  // If no session, show the SignIn component
+// You can remove getUser if it's not being used, or if needed, update it for proper error handling
+async function getUser(email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      console.log(`No user found with email: ${email}`);
+      return null;
+    }
+    console.table(user);
+    return user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) {
+    return "Good Morning";
+  } else if (hour < 18) {
+    return "Good Afternoon";
+  } else {
+    return "Good Evening";
+  }
+}
+
+export default async function Home() {
+  const session = await auth();
+  const recipes = await prisma.recipe.findMany({
+    include: {
+      author: {
+        select: { name: true },
+      },
+    },
+    take: 20,
+  });
+
+  const d = new Date();
+
   if (!session) {
     return (
       <div
-        className={
-          inter.className + " h-screen flex items-center justify-center"
-        }
+        className={`${inter.className} h-screen flex items-center justify-center`}
       >
         <SignIn />
       </div>
@@ -73,14 +74,32 @@ export default async function Home() {
   }
 
   return (
-    <div className={inter.className}>
-      {session && (
-        <>
-          <b>{JSON.stringify(session.user)}</b>
-          <SignOut />
-        </>
-      )}
-      <FoodCard recipe={sampleRecipe} />
-    </div>
+    <>
+      <Navbar />
+      <div className={inter.className + " flex flex-col items-center"}>
+        {session && (
+          <>
+            <div className="w-full h-80 flex items-center justify-center text-7xl">
+              {getGreeting()}, {session.user?.name}
+            </div>
+            <div className="w-[90%] flex gap-2 flex-wrap justify-center">
+              {recipes.length === 0 ? (
+                <p>No recipes found.</p>
+              ) : (
+                recipes.map((recipe) => (
+                  <SM_Card
+                    key={recipe.id}
+                    img={recipe.image || "/default-image.jpg"}
+                    title={recipe.title}
+                    url={`/recipe/${recipe.id}`}
+                    author={recipe.author?.name}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }

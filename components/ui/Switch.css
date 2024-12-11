@@ -1,0 +1,38 @@
+.switch-container {
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch {
+  width: 50px;
+  height: 26px;
+  background-color: #ccc;
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.switch {
+  background-color: var(--background);
+  border: 1px solid var(--foreground);
+}
+
+.switch-handle {
+  width: 20px;
+  height: 20px;
+  background-color: var(--foreground);
+  border-radius: 50%;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  transition: transform 0.3s ease;
+}
+
+.switch.on .switch-handle {
+  transform: translateX(24px);
+}
+
+.switch.off .switch-handle {
+  transform: translateX(0);
+}

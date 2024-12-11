@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       // Handle unique constraint violation
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // The error code for unique constraint failure
         if (error.code === "P2002") {
           return NextResponse.json(
             { error: "Username is already in use" },

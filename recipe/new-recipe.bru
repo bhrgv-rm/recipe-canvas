@@ -1,0 +1,55 @@
+meta {
+  name: new-recipe
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:3000/api/create-recipe
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Classic Chocolate Chip Cookies",
+    "image": "https://example.com/chocolate-chip-cookies.jpg",
+    "ingredients": [
+      "2 1/4 cups all-purpose flour",
+      "1 tsp baking soda", 
+      "1 tsp salt",
+      "1 cup butter, softened",
+      "3/4 cup granulated sugar",
+      "3/4 cup brown sugar",
+      "1 tsp vanilla extract",
+      "2 large eggs",
+      "2 cups chocolate chips"
+    ],
+    "steps": [
+      "Preheat oven to 375°F (190°C)",
+      "Mix flour, baking soda, and salt in a bowl",
+      "In a separate large bowl, cream together butter, granulated sugar, and brown sugar",
+      "Beat in vanilla and eggs",
+      "Gradually blend in the flour mixture",
+      "Stir in chocolate chips",
+      "Drop spoonfuls of dough onto ungreased baking sheets",
+      "Bake for 9-11 minutes or until golden brown",
+      "Let cool on baking sheet for 2 minutes, then transfer to wire rack"
+    ],
+    "nutritionalFacts": {
+      "servingSize": "1 cookie",
+      "calories": 150,
+      "totalFat": 7,
+      "sugars": 12,
+      "protein": 2
+    },
+    "difficulty": 2,
+    "cookingTime": 26,
+    "preparationTips": [
+      "Use room temperature butter for better mixing",
+      "Don't overmix the dough",
+      "Use a cookie scoop for uniform cookies",
+      "Allow baking sheets to cool between batches"
+    ]
+  }
+}

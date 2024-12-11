@@ -8,6 +8,9 @@ export function SignIn() {
   return (
     <div className="sign-in flex flex-col items-center gap-3">
       <CredsSignIn />
+      <a href="/user/new" className="w-full">
+        <button className="w-full">Create Account</button>
+      </a>
       <div className="flex gap-3">
         {/* GitHub sign-in form */}
         <form
