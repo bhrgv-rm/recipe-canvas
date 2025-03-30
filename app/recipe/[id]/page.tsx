@@ -66,7 +66,7 @@ export default async function RecipeDetailPage({
 
           {isOwnerOrAdmin && (
             <div className="flex items-center gap-4">
-              <a href="/">Edit Recipe</a>
+              <a href={`/recipe/${recipe.id}/edit`}>Edit Recipe</a>
               <form action={handleDelete}>
                 <button
                   type="submit"

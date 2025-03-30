@@ -17,6 +17,8 @@ const NUTRITIONAL_FACTS_OPTIONS = [
 
 export default function NewRecipe() {
   const router = useRouter();
+
+  // Initial form data state
   const [formData, setFormData] = useState({
     title: "",
     image: "",
@@ -31,20 +33,17 @@ export default function NewRecipe() {
       totalFat: 0,
       sugars: 0,
       protein: 0,
-      carbohydrates: 0,
-      cholesterol: 0,
-      sodium: 0,
     },
   });
 
   // Errors state
   const [errors, setErrors] = useState({
     title: "",
-    image: "",
     ingredients: "",
     steps: "",
     difficulty: "",
     cookingTime: "",
+    servingSize: "",
   });
 
   // Additional state variables
@@ -57,31 +56,6 @@ export default function NewRecipe() {
   const [submitError, setSubmitError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Improved URL validation function
-  const isValidImageUrl = (url: string): boolean => {
-    try {
-      const parsedUrl = new URL(url);
-      // Check for common image file extensions
-      const imageExtensions = [
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".gif",
-        ".webp",
-        ".bmp",
-        ".svg",
-      ];
-      return (
-        (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") &&
-        imageExtensions.some((ext) =>
-          parsedUrl.pathname.toLowerCase().endsWith(ext)
-        )
-      );
-    } catch {
-      return false;
-    }
-  };
-
   // Handle switch change for image input type
   const handleSwitchChange = (newState: boolean, type: string) => {
     setSwitchState(newState);
@@ -89,8 +63,73 @@ export default function NewRecipe() {
     // Reset image-related states when switching
     setFormData((prev) => ({ ...prev, image: "" }));
     setImageFile(null);
-    // Clear image errors when switching
-    setErrors((prev) => ({ ...prev, image: "" }));
+  };
+
+  // Handle input changes
+  const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, files } = e.target;
+    let errorMessage = "";
+
+    if (name === "image") {
+      if (inputType === "file" && files?.[0]) {
+        try {
+          setImageFile(files[0]);
+
+          const base64Image = await imageToBase64(files[0]);
+          setFormData((prev) => ({ ...prev, image: base64Image }));
+        } catch (error) {
+          setSubmitError("Failed to convert image to base64.");
+        }
+      } else if (inputType === "text") {
+        const urlRegex = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i;
+        if (urlRegex.test(value)) {
+          setFormData((prev) => ({ ...prev, image: value }));
+          setErrors((prev) => ({ ...prev, image: "" }));
+        } else {
+          setErrors((prev) => ({ ...prev, image: "Please enter a valid URL" }));
+        }
+      }
+    }
+
+    switch (name) {
+      case "title":
+        errorMessage =
+          value.length < 3 ? "Title must be at least 3 characters" : "";
+        break;
+      case "difficulty":
+        errorMessage =
+          parseInt(value) < 1 || parseInt(value) > 5
+            ? "Difficulty must be between 1 and 5"
+            : "";
+        break;
+      case "cookingTime":
+        errorMessage =
+          parseInt(value) <= 0 ? "Cooking time must be greater than 0" : "";
+        break;
+      case "servingSize":
+        errorMessage =
+          value.trim() === "" ? "Serving size cannot be empty" : "";
+        setFormData((prev) => ({
+          ...prev,
+          nutritionalFacts: {
+            ...prev.nutritionalFacts,
+            servingSize: value,
+          },
+        }));
+        break;
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: errorMessage,
+    }));
+
+    if (name !== "image" && name !== "servingSize") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   // Add ingredient input
@@ -179,76 +218,16 @@ export default function NewRecipe() {
     }
   };
 
-  const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, files } = e.target;
-
-    if (name === "image") {
-      if (inputType === "file" && files?.[0]) {
-        try {
-          setImageFile(files[0]);
-
-          const base64Image = await imageToBase64(files[0]);
-          setFormData((prev) => ({ ...prev, image: base64Image }));
-          setErrors((prev) => ({ ...prev, image: "" }));
-        } catch (error) {
-          setSubmitError("Failed to convert image to base64.");
-          setErrors((prev) => ({ ...prev, image: "Failed to process image" }));
-        }
-      } else if (inputType === "text") {
-        // Allow typing freely, but validate on submission
-        setFormData((prev) => ({ ...prev, image: value }));
-        setErrors((prev) => ({ ...prev, image: "" }));
-      }
-      return; // Exit early for image handling
-    }
-
-    // Rest of the existing handleChange logic for other fields
-    let errorMessage = "";
-    switch (name) {
-      case "title":
-        errorMessage =
-          value.length < 3 ? "Title must be at least 3 characters" : "";
-        break;
-      case "difficulty":
-        errorMessage =
-          parseInt(value) < 1 || parseInt(value) > 5
-            ? "Difficulty must be between 1 and 5"
-            : "";
-        break;
-      case "cookingTime":
-        errorMessage =
-          parseInt(value) <= 0 ? "Cooking time must be greater than 0" : "";
-        break;
-    }
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: errorMessage,
-    }));
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Modify the handleSubmit function to include URL validation
+  // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     setSubmitError("");
     setIsSubmitting(true);
-    console.log("Submitting form data:", formData);
 
     const newErrors = {
       title:
         formData.title.length < 3 ? "Title must be at least 3 characters" : "",
-      image:
-        inputType === "text" &&
-        formData.image !== "" &&
-        !isValidImageUrl(formData.image)
-          ? "Please enter a valid image URL (must end with .jpg, .png, etc.)"
-          : "",
       ingredients: formData.ingredients.some((ing) => ing.trim() === "")
         ? "All ingredients must be filled"
         : "",
@@ -261,6 +240,10 @@ export default function NewRecipe() {
           : "",
       cookingTime:
         formData.cookingTime <= 0 ? "Cooking time must be greater than 0" : "",
+      servingSize:
+        formData.nutritionalFacts.servingSize.trim() === ""
+          ? "Serving size cannot be empty"
+          : "",
     };
 
     setErrors(newErrors);
@@ -282,7 +265,7 @@ export default function NewRecipe() {
       } catch (error) {
         setSubmitError(
           axios.isAxiosError(error)
-            ? error.response?.data?.message || "API request failed"
+            ? error.response?.data?.message || "Submission failed"
             : "An unexpected error occurred"
         );
       } finally {
@@ -295,7 +278,6 @@ export default function NewRecipe() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Title Input */}
       <div className="r-title">
         <input
           type="text"
@@ -310,7 +292,6 @@ export default function NewRecipe() {
         {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
       </div>
 
-      {/* Image Input */}
       <div className="r-image">
         <div className="mb-2 flex gap-2 items-center">
           Image URL
@@ -320,18 +301,14 @@ export default function NewRecipe() {
         <input
           type={inputType}
           name="image"
-          placeholder="Enter Image URL (must be .jpg, .png, etc.)"
+          placeholder="Enter Image URL"
           value={inputType === "text" ? formData.image : undefined}
           onChange={handleChange}
-          className={`w-full p-2 border ${
-            errors.image ? "border-red-500" : "border-gray-300"
-          }`}
+          className="w-full p-2 border"
           autoComplete="off"
         />
-        {errors.image && <p className="text-red-500 text-sm">{errors.image}</p>}
       </div>
 
-      {/* Ingredients Input */}
       <div className="r-ingredients">
         <label className="block mb-2">Ingredients</label>
         {formData.ingredients.map((ingredient, index) => (
@@ -347,7 +324,7 @@ export default function NewRecipe() {
         <button
           type="button"
           onClick={addIngredient}
-          className="px-4 py-2 rounded"
+          className=" px-4 py-2 rounded"
         >
           Add Ingredient
         </button>
@@ -356,7 +333,6 @@ export default function NewRecipe() {
         )}
       </div>
 
-      {/* Steps Input */}
       <div className="r-steps">
         <label className="block mb-2">Steps</label>
         {formData.steps.map((step, index) => (
@@ -369,13 +345,12 @@ export default function NewRecipe() {
             className="w-full p-2 border mb-2"
           />
         ))}
-        <button type="button" onClick={addStep} className="px-4 py-2 rounded">
+        <button type="button" onClick={addStep} className=" px-4 py-2 rounded">
           Add Step
         </button>
         {errors.steps && <p className="text-red-500 text-sm">{errors.steps}</p>}
       </div>
 
-      {/* Difficulty Input */}
       <div className="r-diff">
         <label htmlFor="diff" className="block mb-2">
           Difficulty (1 - 5)
@@ -397,7 +372,6 @@ export default function NewRecipe() {
         )}
       </div>
 
-      {/* Cooking Time Input */}
       <div className="r-time">
         <label htmlFor="time" className="block mb-2">
           Time (in minutes)
@@ -417,7 +391,6 @@ export default function NewRecipe() {
         )}
       </div>
 
-      {/* Preparation Tips Input */}
       <div className="r-tips">
         <label htmlFor="tips" className="block mb-2">
           Preparation Tips
@@ -441,6 +414,25 @@ export default function NewRecipe() {
         </button>
       </div>
 
+      <div className="r-serving-size">
+        <label htmlFor="servingSize" className="block mb-2">
+          Serving Size
+        </label>
+        <input
+          type="text"
+          name="servingSize"
+          id="servingSize"
+          placeholder="e.g., 1 slice, 1 cup, 100g"
+          value={formData.nutritionalFacts.servingSize}
+          onChange={handleChange}
+          className={`w-full p-2 border ${
+            errors.servingSize ? "border-red-500" : "border-gray-300"
+          }`}
+        />
+        {errors.servingSize && (
+          <p className="text-red-500 text-sm">{errors.servingSize}</p>
+        )}
+      </div>
       <div className="r-nutritional-facts">
         <label className="block mb-2">Nutritional Facts</label>
         <div className="flex space-x-2">
@@ -472,7 +464,21 @@ export default function NewRecipe() {
             Add Fact
           </button>
         </div>
-
+        <div className="mt-2">
+          {formData.nutritionalFacts.servingSize && (
+            <div className="text-sm text-foreground mb-2">
+              Serving Size: {formData.nutritionalFacts.servingSize}
+            </div>
+          )}
+          {Object.entries(formData.nutritionalFacts)
+            .filter(([key, value]) => key !== "servingSize" && value !== 0)
+            .map(([key, value]) => (
+              <div key={key} className="text-sm text-foreground">
+                {NUTRITIONAL_FACTS_OPTIONS.find((f) => f.id === key)?.label}:{" "}
+                {value}
+              </div>
+            ))}
+        </div>
         <div className="mt-2">
           {Object.entries(formData.nutritionalFacts)
             .filter(([key, value]) => key !== "servingSize" && value !== 0)

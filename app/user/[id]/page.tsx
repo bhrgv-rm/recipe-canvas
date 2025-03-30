@@ -46,6 +46,7 @@ const USER_ID_PAGE = async ({ params }: { params: { id: string } }) => {
           />
           <p>{reqUser.userName}</p>
           <p>({reqUser.name})</p>
+          {isOwner && <a href="/user/edit">Edit Account</a>}
         </div>
       </div>
       <div className="recipes">
