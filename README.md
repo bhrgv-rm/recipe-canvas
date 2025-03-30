@@ -7,6 +7,7 @@
 
 Below is the image of the PostgreSQL tables that are used to create the database.
 ![](/schema.png)
+Image taken from [Prismaliser](https://prismaliser.app/) using the file [schema.prisma](/prisma/schema.prisma)
 
 ---
 
